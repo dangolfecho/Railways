@@ -7,7 +7,6 @@
 #include <cppconn/prepared_statement.h>
 using namespace std;
 
-//for demonstration only. never save your password in the code!
 const string server = "tcp://127.0.0.1:3306";
 const string username = "root";
 const string password = "root";
@@ -37,10 +36,21 @@ Backend::Backend() {
         system("pause");
         exit(1);
     }
-    //please create database "giffy" ahead of time
-    con->setSchema("giffy");
-    /*stmt = con->createStatement();
+}
 
+Backend:: ~Backend(){
+    delete stmt;
+    delete pstmt;
+    delete con;
+}
+
+void Backend::create() {
+    stmt = con->createStatement();
+    stmt->execute("CREATE TABLE IF NOT EXISTS schedule(train_no INTEGER(7) PRIMARY KEY, departure_station VARCHAR(50), quantity INTEGER);");
+    cout << "Finished creating table" << endl;
+    delete stmt;
+
+    /*
     pstmt = con->prepareStatement("INSERT INTO inventory(name, quantity) VALUES(?,?)");
     pstmt->setString(1, "banana");
     pstmt->setInt(2, 150);
@@ -55,18 +65,8 @@ Backend::Backend() {
     pstmt->setString(1, "apple");
     pstmt->setInt(2, 100);
     pstmt->execute();
-    cout << "One row inserted." << endl;*/
-
-}
-
-Backend:: ~Backend(){
-    delete stmt;
-    delete pstmt;
-    delete con;
-}
-
-void Backend::create() {
-
+    cout << "One row inserted." << endl;
+    */
 }
 
 class Login {
