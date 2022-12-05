@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
+#include<vector>
 
 #include "mysql_connection.h"
 #include <cppconn/driver.h>
@@ -21,6 +22,8 @@ public:
     Backend();
     ~Backend();
     void create();
+    void add(string d_station, string e_station, string duration, int tickets, int price);
+    void remove(int train_no);
 };
 
 
@@ -36,6 +39,10 @@ Backend::Backend() {
         system("pause");
         exit(1);
     }
+    stmt = con->createStatement();
+    stmt->execute("CREATE TABLE IF NOT EXISTS schedule(train_no INTEGER(7) PRIMARY KEY, starting_date VARCHAR(10), departure_station VARCHAR(50), departure_time VARCHAR(8), arrival_station VARCHAR(5), arrival_time VARCHAR(8), duration VARCHAR(8), tickets INTEGER(3), price INTEGER(3));");
+    stmt->execute("CREATE TABLE IF NOT EXISTS userinfo(username VARCHAR(50) PRIMARY KEY, password VARCHAR(50));");
+    stmt->execute("CREATE TABLE IF NOT EXISTS booked_tickets(username VARCHAR(50) PRIMARY KEY, journey_date VARCHAR(50), train_no INTEGER(7), no_of_tickets INTEGER(3));");
 }
 
 Backend:: ~Backend(){
@@ -45,28 +52,7 @@ Backend:: ~Backend(){
 }
 
 void Backend::create() {
-    stmt = con->createStatement();
-    stmt->execute("CREATE TABLE IF NOT EXISTS schedule(train_no INTEGER(7) PRIMARY KEY, departure_station VARCHAR(50), quantity INTEGER);");
-    cout << "Finished creating table" << endl;
-    delete stmt;
-
-    /*
-    pstmt = con->prepareStatement("INSERT INTO inventory(name, quantity) VALUES(?,?)");
-    pstmt->setString(1, "banana");
-    pstmt->setInt(2, 150);
-    pstmt->execute();
-    cout << "One row inserted." << endl;
-
-    pstmt->setString(1, "orange");
-    pstmt->setInt(2, 154);
-    pstmt->execute();
-    cout << "One row inserted." << endl;
-
-    pstmt->setString(1, "apple");
-    pstmt->setInt(2, 100);
-    pstmt->execute();
-    cout << "One row inserted." << endl;
-    */
+    vector<string> stations = { "Chennai", "Madurai", "Trichy", "Coimbatore", "Bangalore", "Mettupalayam", "Mumbai", "Delhi", "Kolkata", "Hyderabad" };
 }
 
 class Login {
@@ -110,11 +96,17 @@ int adminLogin() {
 
 class User {
 private:
+    Backend* database;
     int choice;
 public:
+    User(Backend* b);
    int start();
    int menu();
 };
+
+User::User(Backend* b) {
+    database = b;
+}
 
 int User::start() {
     cout << "Enter 1 to login\n";
@@ -125,6 +117,7 @@ int User::start() {
 
 class Admin {
 private:
+    Backend* database;
     int choice;
     void decide();
     void populate();
@@ -132,11 +125,49 @@ private:
     void deleteTrain();
     void updateTrain();
 public:
+    Admin(Backend* b);
     int start();
     int menu();
 };
 
+Admin::Admin(Backend* b) {
+    database = b;
+}
+
 void Admin::populate(){
+    database->create();
+}
+
+void Admin::addTrain() {
+    string start_station;
+    string end_station;
+    string duration;
+    int tickets;
+    int price;
+    cout << "Enter the starting station\n";
+    cin >> start_station;
+    cout << "Enter the ending station\n";
+    cin >> end_station;
+    cout << "Enter the duration\n";
+    cin >> duration;
+    cout << "Enter the number of available tickets\n";
+    cin >> tickets;
+    cout << "Enter the price of a ticket\n";
+    cin >> price;
+    database->add(start_station, end_station, duration, tickets, price);
+}
+
+void Admin::deleteTrain() {
+    int train_no;
+    cout << "Enter the train number of the train to be deleted\n";
+    cin >> train_no;
+    database->remove(train_no);
+}
+
+void Admin::updateTrain() {
+    int train_no;
+    cout << "Enter the train number for which details need to be updated\n";
+    cin >> train_no;
 
 }
 
@@ -214,10 +245,11 @@ int Menu::start() {
 int main(){
     Menu m;
     Login l;
+    Backend b;
     while (true) {
         int decide = m.start();
         if (decide == 1) {
-            User u;
+            User u(&b);
             int decision = u.start();
             if (decision == 2) {
                 break;
@@ -251,7 +283,7 @@ int main(){
             }
         }
         else if (decide == 2) {
-            Admin a;
+            Admin a(&b);
             int decision = a.start();
             if (decision == 2) {
                 break;
@@ -289,33 +321,6 @@ int main(){
         }
     }
     /*
-    sql::Driver* driver;
-    sql::Connection* con;
-    sql::Statement* stmt;
-    sql::PreparedStatement* pstmt;
-
-    try
-    {
-        driver = get_driver_instance();
-        con = driver->connect(server, username, password);
-    }
-    catch (sql::SQLException e)
-    {
-        cout << "Could not connect to server. Error message: " << e.what() << endl;
-        system("pause");
-        exit(1);
-    }
-    cout << "HI\n";
-    //please create database "giffy" ahead of time
-    con->setSchema("giffy");
-
-    stmt = con->createStatement();
-    stmt->execute("DROP TABLE IF EXISTS inventory");
-    cout << "Finished dropping table (if existed)" << endl;
-    stmt->execute("CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50), quantity INTEGER);");
-    cout << "Finished creating table" << endl;
-    delete stmt;
-
     pstmt = con->prepareStatement("INSERT INTO inventory(name, quantity) VALUES(?,?)");
     pstmt->setString(1, "banana");
     pstmt->setInt(2, 150);
