@@ -28,6 +28,9 @@ private:
     vector<int> booked_train_no;
     vector<int> booked_tickets;
     int generateNumber(int no_of_digits);
+    string generateTime();
+    string findTime(string start, string end);
+    string generateDate(string date, int offset);
 public:
     Backend();
     ~Backend();
@@ -57,6 +60,59 @@ int Backend::generateNumber(int no_of_digits) {
         mult *= 10;
     }
     return val;
+}
+
+string Backend::generateTime() {
+    string solve;
+    solve += to_string(rand() % 24);
+    solve += ":";
+    solve += to_string(rand() % 60);
+    return solve;
+}
+
+string Backend::generateDate(string date, int offset) {
+    map<string, int>month = { {"01",31},{"02",28},{"03",31}, {"04",30}, {"05",31},{"06",30},{"07",31}, {"08",31}, {"09",30}, {"10",31}, {"11",30} , {"12",31} };
+    int day = stoi(date.substr(0, 2));
+    string actual_month = date.substr(3, 2);
+    int actual_month_no = stoi(actual_month);
+    int month_max = month[date.substr(3, 2)];
+    int year = stoi(date.substr(6, 4));
+    if (year % 4 == 0 && month_max == 28) {
+        month_max++;
+    }
+    int year = stoi(date.substr(5, 2));
+    day++;
+    if (day > month_max) {
+        day = 1;
+        actual_month_no++;
+    }
+    if (actual_month_no > 12) {
+        actual_month_no = 1;
+        year++;
+    }
+    string date_str;
+    if (day < 10) {
+        date_str += '0';
+    }
+    date_str += to_string(day);
+    string month_str;
+    if (actual_month_no < 10) {
+        month_str += '0';
+    }
+    month_str += to_string(actual_month_no);
+    string return_val = date_str + "/" + month_str + "/" + to_string(year);
+    return return_val;
+}
+string Backend::findTime(string start, string end) {
+    int start_hrs = stoi(start.substr(0, 2));
+    int start_min = stoi(start.substr(3, 2)) + start_hrs * 60;
+    int end_hrs = stoi(end.substr(0, 2));
+    int end_min = stoi(end.substr(3, 2)) + end_hrs * 60;
+    int final_val = (end_min - start_min) % (24 * 60);
+    string final_hrs = to_string(final_val / 60) + ":";
+    final_val %= 60;
+    final_hrs += to_string(final_val);
+    return final_hrs;
 }
 
 bool Backend:: usernameAlreadyExists(string username) {
@@ -123,13 +179,21 @@ void Backend::create() {
     int count = stations.size();
     pstmt = con->prepareStatement("INSERT INTO schedule(train_no, starting_date, departure_station, departure_time, arrival_station, arrival_time, duration, tickets, price) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
     string starting_date = "08/12/2022";
+    vector<string> dates;
     string departure_time = "a";
     string arrival_time = "e";
     string duration = "f";
+    for (int i = 0; i < 90; i++) {
+        dates.push_back(starting_date);
+        starting_date = generateDate(starting_date, i);
+    }
     for (int i = 0; i < count; i++) {
         pstmt->setString(3, stations[i]);
         for (int j = 0; j < count; j++) {
             if (i != j) {
+                departure_time = generateTime();
+                arrival_time = generateTime();
+                duration = findTime(departure_time, arrival_time);
                 pstmt->setString(4, departure_time);
                 pstmt->setString(5, stations[j]);
                 pstmt->setString(6, arrival_time);
@@ -138,7 +202,7 @@ void Backend::create() {
                 pstmt->setInt(9, generateNumber(3));
                 for (int k = 0; k < 90; k++) {
                     pstmt->setInt(1, generateNumber(7));
-                    pstmt->setString(2, starting_date);
+                    pstmt->setString(2, dates[i]);
                     pstmt->execute();
                 }
             }
