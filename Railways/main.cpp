@@ -28,16 +28,14 @@ public:
     void remove(int train_no);
     bool usernameAlreadyExists(string username);
     void createUser(string username, string password);
+    bool checkUser(string username, string password);
 };
 
 bool Backend:: usernameAlreadyExists(string username) {
     pstmt = con->prepareStatement("SELECT * FROM userinfo WHERE username = '?';");
     pstmt->setString(1, username);
     res = pstmt->executeQuery();
-    int count = 0;
-    while (res->next()) {
-        count++;
-    }
+    int count = res->rowsCount();
     if (count == 0) {
         return false;
     }
@@ -48,9 +46,20 @@ void Backend::createUser(string username, string password) {
     pstmt = con->prepareStatement("INSERT INTO userinfo(username, password) VALUES(?, ?)");
     pstmt->setString(1, username);
     pstmt->setString(2, password);
-    pstmt->executeQuery();
+    pstmt->execute();
 }
 
+bool Backend::checkUser(string username, string password) {
+    pstmt = con->prepareStatement("SELECT * FROM userinfo WHERE username = ? AND password = ?;");
+    pstmt->setString(1, username);
+    pstmt->setString(2, password);
+    res = pstmt->executeQuery();
+    int count = res->rowsCount();
+    if (count) {
+        return true;
+    }
+    return false;
+}
 
 Backend::Backend() {
     try
@@ -78,9 +87,58 @@ Backend:: ~Backend(){
 
 void Backend::create() {
     int count = stations.size();
+    pstmt = con->prepareStatement("INSERT INTO schedule(train_no, starting_date, departure_station, departure_time, arrival_station, arrival_time, duration, tickets, price) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
+    int train_no = 11;
+    string starting_date = "a";
+    string departure_station = "B";
+    string departure_time = "a";
+    string arrival_station = "c";
+    string arrival_time = "e";
+    string duration = "f";
+    int tickets = 1;
+    int price = 5;
     for (int i = 0; i < count; i++) {
-
+        for (int j = 0; j < count; j++) {
+            pstmt->setInt(1, train_no);
+            pstmt->setString(3, departure_station);
+            pstmt->setString(4, departure_time);
+            pstmt->setString(5, arrival_station);
+            pstmt->setString(6, arrival_time);
+            pstmt->setString(7, duration);
+            pstmt->setInt(8, tickets);
+            pstmt->setInt(9, price);
+            for (int k = 0; k < 90; k++) {
+                pstmt->setString(2, starting_date);
+                pstmt->execute();
+            }
+        }
     }
+}
+
+void Backend::add(string d_station, string e_station, string duration, int tickets, int price) {
+    pstmt = con->prepareStatement("INSERT INTO schedule(train_no, starting_date, departure_station, departure_time, arrival_station, arrival_time, duration, tickets, price) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
+    int train_no = 1;
+    string starting_date = "0";
+    string departure_time = "2";
+    string arrival_time = "2";
+    pstmt->setInt(1, train_no);
+	pstmt->setString(3, d_station);
+	pstmt->setString(4, departure_time);
+	pstmt->setString(5, e_station);
+	pstmt->setString(6, arrival_time);
+	pstmt->setString(7, duration);
+	pstmt->setInt(8, tickets);
+	pstmt->setInt(9, price);
+	for (int k = 0; k < 90; k++) {
+		pstmt->setString(2, starting_date);
+		pstmt->execute();
+	}
+}
+
+void Backend::remove(int train_no) {
+    pstmt = con->prepareStatement("DELETE * FROM schedule WHERE train_no = ?;");
+    pstmt->setInt(1, train_no);
+    pstmt->execute();
 }
 
 class Login {
@@ -105,8 +163,8 @@ int Login::userLogin(int choice) {
         cin >> username;
         cout << "Enter the password\n";
         cin >> password;
-        int valid = 1;//do SQL here
-        if (valid == 1) {
+        bool valid = b->checkUser(username, password);//do SQL here
+        if (valid) {
             return 1;
         }
         else {
@@ -127,6 +185,15 @@ int Login::userLogin(int choice) {
                 b->createUser(username, password);
                 cout << "Account has been succesfully created!\n";
                 return 1;
+            }
+            string choice;
+            cout << "Do you want to enter another username\nEnter y for yes\nEnter n for no";
+            cin >> choice;
+            if (choice == "y" || choice == "Y" || choice == "Yes") {
+                continue;
+            }
+            else {
+                return -1;
             }
         }
     }
@@ -375,27 +442,6 @@ int main(){
             break;
         }
     }
-    /*
-    pstmt = con->prepareStatement("INSERT INTO inventory(name, quantity) VALUES(?,?)");
-    pstmt->setString(1, "banana");
-    pstmt->setInt(2, 150);
-    pstmt->execute();
-    cout << "One row inserted." << endl;
-
-    pstmt->setString(1, "orange");
-    pstmt->setInt(2, 154);
-    pstmt->execute();
-    cout << "One row inserted." << endl;
-
-    pstmt->setString(1, "apple");
-    pstmt->setInt(2, 100);
-    pstmt->execute();
-    cout << "One row inserted." << endl;
-
-    delete pstmt;
-    delete con;
-    system("pause");
     return 0;
-    */
 }
 
