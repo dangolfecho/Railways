@@ -18,13 +18,38 @@ private:
     sql::Connection* con;
     sql::Statement* stmt;
     sql::PreparedStatement* pstmt;
+    sql::ResultSet* res;
+    vector<string> stations = { "Chennai", "Madurai", "Trichy", "Coimbatore", "Bangalore", "Mettupalayam", "Mumbai", "Delhi", "Kolkata", "Hyderabad" };
 public:
     Backend();
     ~Backend();
     void create();
     void add(string d_station, string e_station, string duration, int tickets, int price);
     void remove(int train_no);
+    bool usernameAlreadyExists(string username);
+    void createUser(string username, string password);
 };
+
+bool Backend:: usernameAlreadyExists(string username) {
+    pstmt = con->prepareStatement("SELECT * FROM userinfo WHERE username = '?';");
+    pstmt->setString(1, username);
+    res = pstmt->executeQuery();
+    int count = 0;
+    while (res->next()) {
+        count++;
+    }
+    if (count == 0) {
+        return false;
+    }
+    return true;
+}
+
+void Backend::createUser(string username, string password) {
+    pstmt = con->prepareStatement("INSERT INTO userinfo(username, password) VALUES(?, ?)");
+    pstmt->setString(1, username);
+    pstmt->setString(2, password);
+    pstmt->executeQuery();
+}
 
 
 Backend::Backend() {
@@ -52,32 +77,61 @@ Backend:: ~Backend(){
 }
 
 void Backend::create() {
-    vector<string> stations = { "Chennai", "Madurai", "Trichy", "Coimbatore", "Bangalore", "Mettupalayam", "Mumbai", "Delhi", "Kolkata", "Hyderabad" };
+    int count = stations.size();
+    for (int i = 0; i < count; i++) {
+
+    }
 }
 
 class Login {
 private:
+    Backend* b;
     string username;
     string password;
 public:
-    int userLogin();
+    Login(Backend* db);
+    int userLogin(int choice);
     int adminLogin();
 };
 
-int Login::userLogin() {
-    cout << "Enter the username\n";
-    cin >> username;
-    cout << "Enter the password\n";
-    cin >> password;
-    int valid = 1;//do SQL here
-    if (valid == 1) {
-        return 1;
+
+Login::Login(Backend* db) {
+    b = db;
+}
+
+int Login::userLogin(int choice) {
+    if (choice == 1) {
+        cout << "Enter the username\n";
+        cin >> username;
+        cout << "Enter the password\n";
+        cin >> password;
+        int valid = 1;//do SQL here
+        if (valid == 1) {
+            return 1;
+        }
+        else {
+            cout << "Incorrect credentials\n";
+            return -1;
+        }
     }
     else {
-        cout << "Incorrect credentials\n";
-        return -1;
+        while (true) {
+            cout << "Enter the username\n";
+            cin >> username;
+            if (b->usernameAlreadyExists(username)) {
+                cout << "Username already exists!\n";
+            }
+            else {
+                cout << "Enter the password\n";
+                cin >> password;
+                b->createUser(username, password);
+                cout << "Account has been succesfully created!\n";
+                return 1;
+            }
+        }
     }
 }
+
 
 int adminLogin() {
     string username, password;
@@ -110,6 +164,7 @@ User::User(Backend* b) {
 
 int User::start() {
     cout << "Enter 1 to login\n";
+    cout << "Enter 2 to create a new account\n";
     cout << "Enter 2 to exit\n";
     cin >> choice;
     return choice;
@@ -244,8 +299,8 @@ int Menu::start() {
 
 int main(){
     Menu m;
-    Login l;
     Backend b;
+    Login l(&b);
     while (true) {
         int decide = m.start();
         if (decide == 1) {
@@ -256,7 +311,7 @@ int main(){
             }
             int attempt;
             while (true) {
-                attempt = l.userLogin();
+                attempt = l.userLogin(decision);
                 if (attempt == 1) {
                     break;
                 }
