@@ -1,6 +1,7 @@
 #include<iostream>
 #include <stdlib.h>
 #include<vector>
+#include<time.h>
 
 #include "mysql_connection.h"
 #include <cppconn/driver.h>
@@ -26,6 +27,7 @@ private:
 	vector<int> price;
     vector<int> booked_train_no;
     vector<int> booked_tickets;
+    int generateNumber(int no_of_digits);
 public:
     Backend();
     ~Backend();
@@ -46,8 +48,19 @@ public:
     void update(int choice);
 };
 
+int Backend::generateNumber(int no_of_digits) {
+    srand(time(NULL));
+    int val = 0;
+    int mult = 1;
+    for (int i = 0; i < no_of_digits; i++) {
+        val += mult * (rand() % 10);
+        mult *= 10;
+    }
+    return val;
+}
+
 bool Backend:: usernameAlreadyExists(string username) {
-    pstmt = con->prepareStatement("SELECT * FROM userinfo WHERE username = '?';");
+    pstmt = con->prepareStatement("SELECT * FROM userinfo WHERE username = ?;");
     pstmt->setString(1, username);
     res = pstmt->executeQuery();
     int count = res->rowsCount();
@@ -92,10 +105,12 @@ Backend::Backend() {
         system("pause");
         exit(1);
     }
+    con->setSchema("giffy");
     stmt = con->createStatement();
     stmt->execute("CREATE TABLE IF NOT EXISTS schedule(train_no INTEGER(7) PRIMARY KEY, starting_date VARCHAR(10), departure_station VARCHAR(50), departure_time VARCHAR(8), arrival_station VARCHAR(5), arrival_time VARCHAR(8), duration VARCHAR(8), tickets INTEGER(3), price INTEGER(3));");
     stmt->execute("CREATE TABLE IF NOT EXISTS userinfo(username VARCHAR(50) PRIMARY KEY, password VARCHAR(50));");
     stmt->execute("CREATE TABLE IF NOT EXISTS booked_tickets(username VARCHAR(50) PRIMARY KEY, journey_date VARCHAR(50), train_no INTEGER(7), no_of_tickets INTEGER(3));");
+    create();
 }
 
 Backend:: ~Backend(){
@@ -107,28 +122,25 @@ Backend:: ~Backend(){
 void Backend::create() {
     int count = stations.size();
     pstmt = con->prepareStatement("INSERT INTO schedule(train_no, starting_date, departure_station, departure_time, arrival_station, arrival_time, duration, tickets, price) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
-    int train_no = 11;
-    string starting_date = "a";
-    string departure_station = "B";
+    string starting_date = "08/12/2022";
     string departure_time = "a";
-    string arrival_station = "c";
     string arrival_time = "e";
     string duration = "f";
-    int tickets = 1;
-    int price = 5;
     for (int i = 0; i < count; i++) {
+        pstmt->setString(3, stations[i]);
         for (int j = 0; j < count; j++) {
-            pstmt->setString(3, departure_station);
-            pstmt->setString(4, departure_time);
-            pstmt->setString(5, arrival_station);
-            pstmt->setString(6, arrival_time);
-            pstmt->setString(7, duration);
-            pstmt->setInt(8, tickets);
-            pstmt->setInt(9, price);
-            for (int k = 0; k < 90; k++) {
-                pstmt->setInt(1, train_no);
-                pstmt->setString(2, starting_date);
-                pstmt->execute();
+            if (i != j) {
+                pstmt->setString(4, departure_time);
+                pstmt->setString(5, stations[j]);
+                pstmt->setString(6, arrival_time);
+                pstmt->setString(7, duration);
+                pstmt->setInt(8, generateNumber(3));
+                pstmt->setInt(9, generateNumber(3));
+                for (int k = 0; k < 90; k++) {
+                    pstmt->setInt(1, generateNumber(7));
+                    pstmt->setString(2, starting_date);
+                    pstmt->execute();
+                }
             }
         }
     }
@@ -260,7 +272,7 @@ void Backend::cancel(string username, int choice) {
 
 void Backend::update(int choice) {
     pstmt = con->prepareStatement("UPDATE schedule SET tickets = tickets + ? WHERE train_no = ?;");
-    pstmt->setInt(1, booked_tickets[choice - 1]);
+    pstmt->setInt(1, booked_tickets[choice-1]);
     pstmt->setInt(2, booked_train_no[choice - 1]);
     pstmt->execute();
 }
@@ -438,7 +450,7 @@ User::User(Backend* b, Login* l) {
 int User::start() {
     cout << "Enter 1 to login\n";
     cout << "Enter 2 to create a new account\n";
-    cout << "Enter 2 to exit\n";
+    cout << "Enter 3 to exit\n";
     cin >> choice;
     return choice;
 }
@@ -601,7 +613,7 @@ int main(){
         if (decide == 1) {
             User u(&b,&l);
             int decision = u.start();
-            if (decision == 2) {
+            if (decision == 3) {
                 break;
             }
             int attempt;
