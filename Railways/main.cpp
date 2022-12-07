@@ -1,4 +1,4 @@
-#include <iostream>
+#include<iostream>
 #include <stdlib.h>
 #include<vector>
 
@@ -29,6 +29,7 @@ public:
     bool usernameAlreadyExists(string username);
     void createUser(string username, string password);
     bool checkUser(string username, string password);
+    vector<string> getCities();
 };
 
 bool Backend:: usernameAlreadyExists(string username) {
@@ -59,6 +60,10 @@ bool Backend::checkUser(string username, string password) {
         return true;
     }
     return false;
+}
+
+vector<string> Backend::getCities() {
+    return stations;
 }
 
 Backend::Backend() {
@@ -143,18 +148,22 @@ void Backend::remove(int train_no) {
 
 class Login {
 private:
-    Backend* b;
+    Backend* database;
     string username;
     string password;
 public:
-    Login(Backend* db);
+    Login(Backend* b);
+    string getUsername();
     int userLogin(int choice);
     int adminLogin();
 };
 
+string Login::getUsername() {
+    return username;
+}
 
-Login::Login(Backend* db) {
-    b = db;
+Login::Login(Backend* b) {
+    database = b;
 }
 
 int Login::userLogin(int choice) {
@@ -163,7 +172,7 @@ int Login::userLogin(int choice) {
         cin >> username;
         cout << "Enter the password\n";
         cin >> password;
-        bool valid = b->checkUser(username, password);//do SQL here
+        bool valid = database->checkUser(username, password);//do SQL here
         if (valid) {
             return 1;
         }
@@ -176,13 +185,13 @@ int Login::userLogin(int choice) {
         while (true) {
             cout << "Enter the username\n";
             cin >> username;
-            if (b->usernameAlreadyExists(username)) {
+            if (database->usernameAlreadyExists(username)) {
                 cout << "Username already exists!\n";
             }
             else {
                 cout << "Enter the password\n";
                 cin >> password;
-                b->createUser(username, password);
+                database->createUser(username, password);
                 cout << "Account has been succesfully created!\n";
                 return 1;
             }
@@ -200,7 +209,7 @@ int Login::userLogin(int choice) {
 }
 
 
-int adminLogin() {
+int Login:: adminLogin() {
     string username, password;
     cout << "Enter the username\n";
     cin >> username;
@@ -218,15 +227,75 @@ int adminLogin() {
 class User {
 private:
     Backend* database;
+    Login* l;
+    string username;
     int choice;
+    vector<string> cities;
+    void printCities();
+    void book();
+    void cancel();
 public:
-    User(Backend* b);
+   User(Backend* b, Login* l);
    int start();
    int menu();
 };
 
-User::User(Backend* b) {
+void User::printCities() {
+    for (int i = 0; i < cities.size(); i++) {
+        cout << (i + 1) << " " << cities[i] << "\n";
+    }
+}
+
+void User::book() {
+    cities = database->getCities();
+    int start;
+    int end;
+    printCities();
+    cout << "Choose the starting point\n";
+    cin >> start;
+    printCities();
+    cout << "Choose the ending point\n";
+    cin >> end;
+    if (start == end) {
+        cout << "Starting point and ending point cannot be the same!\n";
+        return;
+    }
+    string date;
+    cout << "Enter the date\n";
+    cin >> date;
+    database->printSelectedTrains(start, end, date);
+    string ans;
+    cout << "Do you want to book the ticket\n";
+    cin >> ans;
+    if(ans != "y"){
+        "Okay!\n";
+        return;
+    }
+    int tickets;
+    cout << "Enter the no of tickets you want\n";
+    cin >> tickets;
+    database->book(start, end, date, tickets);
+    int train_no = database->getTrainNo(start, end, date);
+    //username VARCHAR(50) PRIMARY KEY, journey_date VARCHAR(50), train_no INTEGER(7), no_of_tickets INTEGER(3)
+    database->updateUser(username, date, train_no, tickets);
+    cout << "Tickets have been succesfully booked!\n";
+}
+
+void User::cancel() {
+    vector<vector<string>> tickets = database->getBookedTickets();
+    //print tickets here
+    int choice;
+    cout << "Enter which ticket do you want to cancel\n";
+    cin >> choice;
+    if (choice > 1 * *choice <= tickets.size()) {
+        database->cancel(username, date, train_no);
+        database->update(date, train_no, tickets);
+    }
+}
+
+User::User(Backend* b, Login* l) {
     database = b;
+    this->l = l;
 }
 
 int User::start() {
@@ -235,6 +304,28 @@ int User::start() {
     cout << "Enter 2 to exit\n";
     cin >> choice;
     return choice;
+}
+
+int User::menu() {
+    username = l->getUsername();
+    while (true) {
+        cout << "Enter 1 to book a ticket\n";
+        cout << "Enter 2 to cancel a ticket\n";
+        cout << "Enter 3 to exit\n";
+        cin >> choice;
+        if (choice == 1) {
+            book();
+        }
+        else if (choice == 2) {
+            cancel();
+        }
+        else if (choice == 3) {
+            return -1;
+        }
+        else {
+            cout << "Enter a valid choice\n";
+        }
+    }
 }
 
 class Admin {
@@ -371,7 +462,7 @@ int main(){
     while (true) {
         int decide = m.start();
         if (decide == 1) {
-            User u(&b);
+            User u(&b,&l);
             int decision = u.start();
             if (decision == 2) {
                 break;
@@ -444,4 +535,3 @@ int main(){
     }
     return 0;
 }
-
