@@ -258,7 +258,7 @@ void Backend::getSelectedTrains(int start, int end, string date) {
     tickets.clear();
     string dep_city = stations[start - 1];
     string end_city = stations[end - 1];
-    pstmt = con->prepareStatement("SELECT * FROM schedule WHERE (departure_station = ? AND arrival_station = ? AND date = ?);");
+    pstmt = con->prepareStatement("SELECT * FROM schedule WHERE (departure_station = ? AND arrival_station = ? AND starting_date = ?);");
     pstmt->setString(1, dep_city);
     pstmt->setString(2, end_city);
     pstmt->setString(3, date);
@@ -267,12 +267,12 @@ void Backend::getSelectedTrains(int start, int end, string date) {
     vector<string> temp;
     while (res->next()) {
         train_no.push_back(res->getInt("train_no"));
-        temp.push_back("starting_date");
-        temp.push_back("departure_station");
-        temp.push_back("departure_time");
-        temp.push_back("arrival_station");
-        temp.push_back("arrival_time");
-        temp.push_back("duration");
+        temp.push_back(res->getString("starting_date"));
+        temp.push_back(res->getString("departure_station"));
+        temp.push_back(res->getString("departure_time"));
+        temp.push_back(res->getString("arrival_station"));
+        temp.push_back(res->getString("arrival_time"));
+        temp.push_back(res->getString("duration"));
         tickets.push_back(res->getInt("tickets"));
         price.push_back(res->getInt("price"));
         details.push_back(temp);
@@ -286,8 +286,8 @@ int Backend::printSelectedTrains() {
         return -1;
     }
     int i = 0;
-    printf("%d %10s %10s %10s %10s %10s %10s %5d %5d", "Date of Journey Start", "Departure Station", "Departure Time", "Arrival Station", "Arrival Time", "Duration", "Tickets", "Price");
-    for (int i = 0; i < details.size(); i++) {
+    printf("%10s %10s %10s %10s %10s %10s %10s %5s %5s\n", "Date of Journey Start", "Departure Station", "Departure Time", "Arrival Station", "Arrival Time", "Duration", "Tickets", "Price");
+    for (; i < details.size(); i++) {
         printf("%d ", (i + 1));
         for (int j = 0; j < details[i].size(); j++) {
             printf("%10s ", details[i][j]);
@@ -299,7 +299,8 @@ int Backend::printSelectedTrains() {
 
 void Backend::book(int train_choice, int tickets) {
     pstmt = con->prepareStatement("UPDATE schedule SET tickets = tickets - ? WHERE train_no = ?;");
-    pstmt->setInt(1, train_no[train_choice-1]);
+    pstmt->setInt(1, tickets);
+    pstmt->setInt(2, train_no[train_choice-1]);
     pstmt->executeUpdate();
 }
 
@@ -331,7 +332,7 @@ void Backend::printBookedTickets() {
     string e_station;
     pstmt = con->prepareStatement("SELECT departure_station, arrival_station FROM schedule WHERE train_no = ?;");
     int i = 0;
-    printf("%10s %10s %10d %10d\n", "FROM", "TO", "TRAIN NO", "TICKETS");
+    printf("%10s %10s %10s %10s\n", "FROM", "TO", "TRAIN NO", "TICKETS");
     while (i < booked_tickets.size()) {
         pstmt->setInt(1, booked_train_no[i]);
         res = pstmt->executeQuery();
@@ -759,8 +760,8 @@ int main(){
                 }
             }
         }
-        else {
-            break;
+        else if (decide != 1) {
+            return 0;
         }
     }
     return 0;
