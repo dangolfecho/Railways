@@ -20,6 +20,12 @@ private:
     sql::PreparedStatement* pstmt;
     sql::ResultSet* res;
     vector<string> stations = { "Chennai", "Madurai", "Trichy", "Coimbatore", "Bangalore", "Mettupalayam", "Mumbai", "Delhi", "Kolkata", "Hyderabad" };
+	vector<int> train_no;
+    vector<vector<string>> details;
+	vector<int> tickets;
+	vector<int> price;
+    vector<int> booked_train_no;
+    vector<int> booked_tickets;
 public:
     Backend();
     ~Backend();
@@ -30,6 +36,14 @@ public:
     void createUser(string username, string password);
     bool checkUser(string username, string password);
     vector<string> getCities();
+    void getSelectedTrains(int start, int end, string date);
+    int printSelectedTrains();
+    void book(int train_choice, int tickets);
+    void updateUser(string username, string date, int train_no, int tickets);
+    int getBookedTickets(string username);
+    void printBookedTickets();
+    void cancel(string username, int choice);
+    void update(int choice);
 };
 
 bool Backend:: usernameAlreadyExists(string username) {
@@ -104,7 +118,6 @@ void Backend::create() {
     int price = 5;
     for (int i = 0; i < count; i++) {
         for (int j = 0; j < count; j++) {
-            pstmt->setInt(1, train_no);
             pstmt->setString(3, departure_station);
             pstmt->setString(4, departure_time);
             pstmt->setString(5, arrival_station);
@@ -113,6 +126,7 @@ void Backend::create() {
             pstmt->setInt(8, tickets);
             pstmt->setInt(9, price);
             for (int k = 0; k < 90; k++) {
+                pstmt->setInt(1, train_no);
                 pstmt->setString(2, starting_date);
                 pstmt->execute();
             }
@@ -143,6 +157,111 @@ void Backend::add(string d_station, string e_station, string duration, int ticke
 void Backend::remove(int train_no) {
     pstmt = con->prepareStatement("DELETE * FROM schedule WHERE train_no = ?;");
     pstmt->setInt(1, train_no);
+    pstmt->execute();
+}
+    
+void Backend::getSelectedTrains(int start, int end, string date) {
+    details.clear();
+    price.clear();
+    tickets.clear();
+    string dep_city = stations[start - 1];
+    string end_city = stations[end - 1];
+    pstmt = con->prepareStatement("SELECT * FROM schedule WHERE (departure_station = '?' AND arrival_station = '?' AND date = '?');");
+    pstmt->setString(1, dep_city);
+    pstmt->setString(2, end_city);
+    pstmt->setString(3, date);
+    res = pstmt->executeQuery();
+    int size = 0;
+    vector<string> temp;
+    while (res->next()) {
+        train_no.push_back(res->getInt("train_no"));
+        temp.push_back("starting_date");
+        temp.push_back("departure_station");
+        temp.push_back("departure_time");
+        temp.push_back("arrival_station");
+        temp.push_back("arrival_time");
+        temp.push_back("duration");
+        tickets.push_back(res->getInt("tickets"));
+        price.push_back(res->getInt("price"));
+        details.push_back(temp);
+        temp.clear();
+    }
+}
+
+int Backend::printSelectedTrains() {
+    if (details.size() == 0) {
+        cout << "No trains are available\n";
+        return -1;
+    }
+    int i = 0;
+    printf("%d %10s %10s %10s %10s %10s %10s %5d %5d", "Date of Journey Start", "Departure Station", "Departure Time", "Arrival Station", "Arrival Time", "Duration", "Tickets", "Price");
+    for (int i = 0; i < details.size(); i++) {
+        printf("%d ", (i + 1));
+        for (int j = 0; j < details[i].size(); j++) {
+            printf("%10s ", details[i][j]);
+        }
+        printf("%5d %5d\n", tickets[i], price[i]);
+    }
+    return i;
+}
+
+void Backend::book(int train_choice, int tickets) {
+    pstmt = con->prepareStatement("UPDATE schedule SET tickets = tickets - ? WHERE train_no = ?;");
+    pstmt->setInt(1, train_no[train_choice-1]);
+    pstmt->executeUpdate();
+}
+
+void Backend::updateUser(string username, string date, int train_no, int tickets) {
+    pstmt = con->prepareStatement("INSERT INTO booked_tickets(username, journey_date, train_no, no_of_tickets) VALUES(?, ?, ?, ?);");
+    pstmt->setString(1, username);
+    pstmt->setString(2, date);
+    pstmt->setInt(3, train_no);
+    pstmt->setInt(4, tickets);
+    pstmt->execute();
+}
+
+int Backend::getBookedTickets(string username) {
+    booked_tickets.clear();
+    booked_train_no.clear();
+    pstmt = con->prepareStatement("SELECT train_no, no_of_tickets FROM booked_tickets WHERE username = ?;");
+    pstmt->setString(1, username);
+    res = pstmt->executeQuery();
+    int count = 0;
+    while (res->next()) {
+        booked_tickets.push_back(res->getInt("train_no"));
+        booked_train_no.push_back(res->getInt("no_of_tickets"));
+    }
+    return count;
+}
+
+void Backend::printBookedTickets() {
+    string d_station;
+    string e_station;
+    pstmt = con->prepareStatement("SELECT departure_station, arrival_station FROM schedule WHERE train_no = ?;");
+    int i = 0;
+    printf("%10s %10s %10d %10d\n", "FROM", "TO", "TRAIN NO", "TICKETS");
+    while (i < booked_tickets.size()) {
+        pstmt->setInt(1, booked_train_no[i]);
+        res = pstmt->executeQuery();
+        d_station = res->getString("departure_statiion");
+        e_station = res->getString("arrival_statiion");
+        printf("%10s %10s %10d %10d\n", d_station, e_station, booked_train_no[i], booked_tickets[i]);
+        i++;
+    }
+
+}
+
+void Backend::cancel(string username, int choice) {
+    pstmt = con->prepareStatement("DELETE FROM booked_tickets WHERE (username = ? AND train_no = ?);");
+    pstmt->setString(1, username);
+    pstmt->setInt(2, booked_train_no[choice - 1]);
+    pstmt->execute();
+}
+
+void Backend::update(int choice) {
+    pstmt = con->prepareStatement("UPDATE schedule SET tickets = tickets + ? WHERE train_no = ?;");
+    pstmt->setInt(1, booked_tickets[choice - 1]);
+    pstmt->setInt(2, booked_train_no[choice - 1]);
     pstmt->execute();
 }
 
@@ -263,7 +382,11 @@ void User::book() {
     string date;
     cout << "Enter the date\n";
     cin >> date;
-    database->printSelectedTrains(start, end, date);
+    database->getSelectedTrains(start, end, date);
+    int val = database->printSelectedTrains();
+    if (val == -1) {
+        return;
+    }
     string ans;
     cout << "Do you want to book the ticket\n";
     cin >> ans;
@@ -271,25 +394,39 @@ void User::book() {
         "Okay!\n";
         return;
     }
+    int train_choice;
+    cout << "Enter the train\n";
+    cin >> train_choice;
+    if (train_choice < 1 || train_choice > val) {
+        cout << "Enter a valid choice\n";
+        return;
+    }
     int tickets;
     cout << "Enter the no of tickets you want\n";
     cin >> tickets;
-    database->book(start, end, date, tickets);
-    int train_no = database->getTrainNo(start, end, date);
+    database->book(train_choice, tickets);
     //username VARCHAR(50) PRIMARY KEY, journey_date VARCHAR(50), train_no INTEGER(7), no_of_tickets INTEGER(3)
-    database->updateUser(username, date, train_no, tickets);
+    database->updateUser(username,  date, train_choice, tickets);
     cout << "Tickets have been succesfully booked!\n";
 }
 
 void User::cancel() {
-    vector<vector<string>> tickets = database->getBookedTickets();
-    //print tickets here
+    int val = database->getBookedTickets(username);
+    if (val == 0) {
+        cout << "No tickets have been booked for the current user!\n";
+        return;
+    }
+    database->printBookedTickets();
     int choice;
     cout << "Enter which ticket do you want to cancel\n";
     cin >> choice;
-    if (choice > 1 * *choice <= tickets.size()) {
-        database->cancel(username, date, train_no);
-        database->update(date, train_no, tickets);
+    if (choice > 1 && choice <= val) {
+        database->cancel(username, choice);
+        database->update(choice);
+        cout << "Ticket cancelled successfully!\n";
+    }
+    else {
+        cout << "Enter a valid choice\n";
     }
 }
 
