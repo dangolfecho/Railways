@@ -52,7 +52,6 @@ public:
 };
 
 int Backend::generateNumber(int no_of_digits) {
-    srand(time(NULL));
     int val = 0;
     int mult = 1;
     for (int i = 0; i < no_of_digits; i++) {
@@ -64,9 +63,17 @@ int Backend::generateNumber(int no_of_digits) {
 
 string Backend::generateTime() {
     string solve;
-    solve += to_string(rand() % 24);
+    int hrs = rand() % 24;
+    if (hrs < 10) {
+        solve += '0';
+    }
+    solve += to_string(hrs);
     solve += ":";
-    solve += to_string(rand() % 60);
+    int min = rand() % 60;
+    if (min < 10) {
+        solve += '0';
+    }
+    solve += to_string(min);
     return solve;
 }
 
@@ -80,7 +87,6 @@ string Backend::generateDate(string date, int offset) {
     if (year % 4 == 0 && month_max == 28) {
         month_max++;
     }
-    int year = stoi(date.substr(5, 2));
     day++;
     if (day > month_max) {
         day = 1;
@@ -108,9 +114,17 @@ string Backend::findTime(string start, string end) {
     int start_min = stoi(start.substr(3, 2)) + start_hrs * 60;
     int end_hrs = stoi(end.substr(0, 2));
     int end_min = stoi(end.substr(3, 2)) + end_hrs * 60;
-    int final_val = (end_min - start_min) % (24 * 60);
-    string final_hrs = to_string(final_val / 60) + ":";
+    int final_val = ((end_min - start_min) % (24 * 60) + (24 * 60) ) % (24*60);
+    int hrs = final_val / 60;
+    string final_hrs;
+    if (hrs < 10) {
+        final_hrs += '0';
+    }
+    final_hrs += to_string(hrs) + ":";
     final_val %= 60;
+    if (final_val < 10) {
+        final_hrs += '0';
+    }
     final_hrs += to_string(final_val);
     return final_hrs;
 }
@@ -163,10 +177,10 @@ Backend::Backend() {
     }
     con->setSchema("giffy");
     stmt = con->createStatement();
-    stmt->execute("CREATE TABLE IF NOT EXISTS schedule(train_no INTEGER(7) PRIMARY KEY, starting_date VARCHAR(10), departure_station VARCHAR(50), departure_time VARCHAR(8), arrival_station VARCHAR(5), arrival_time VARCHAR(8), duration VARCHAR(8), tickets INTEGER(3), price INTEGER(3));");
-    stmt->execute("CREATE TABLE IF NOT EXISTS userinfo(username VARCHAR(50) PRIMARY KEY, password VARCHAR(50));");
-    stmt->execute("CREATE TABLE IF NOT EXISTS booked_tickets(username VARCHAR(50) PRIMARY KEY, journey_date VARCHAR(50), train_no INTEGER(7), no_of_tickets INTEGER(3));");
-    create();
+    stmt->executeUpdate("CREATE TABLE IF NOT EXISTS schedule(train_no INTEGER(10) PRIMARY KEY, starting_date VARCHAR(12), departure_station VARCHAR(50), departure_time VARCHAR(12), arrival_station VARCHAR(40), arrival_time VARCHAR(12), duration VARCHAR(8), tickets INTEGER(3), price INTEGER(3));");
+    stmt->executeUpdate("CREATE TABLE IF NOT EXISTS userinfo(username VARCHAR(50) PRIMARY KEY, password VARCHAR(50));");
+    stmt->executeUpdate("CREATE TABLE IF NOT EXISTS booked_tickets(username VARCHAR(50) PRIMARY KEY, journey_date VARCHAR(50), train_no INTEGER(7), no_of_tickets INTEGER(3));");
+    //create();
 }
 
 Backend:: ~Backend(){
@@ -177,7 +191,7 @@ Backend:: ~Backend(){
 
 void Backend::create() {
     int count = stations.size();
-    pstmt = con->prepareStatement("INSERT INTO schedule(train_no, starting_date, departure_station, departure_time, arrival_station, arrival_time, duration, tickets, price) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
+    pstmt = con->prepareStatement("INSERT INTO schedule VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
     string starting_date = "08/12/2022";
     vector<string> dates;
     string departure_time = "a";
@@ -185,8 +199,9 @@ void Backend::create() {
     string duration = "f";
     for (int i = 0; i < 90; i++) {
         dates.push_back(starting_date);
-        starting_date = generateDate(starting_date, i);
+        starting_date = generateDate(starting_date, 1);
     }
+    int train_no = 0;
     for (int i = 0; i < count; i++) {
         pstmt->setString(3, stations[i]);
         for (int j = 0; j < count; j++) {
@@ -201,9 +216,10 @@ void Backend::create() {
                 pstmt->setInt(8, generateNumber(3));
                 pstmt->setInt(9, generateNumber(3));
                 for (int k = 0; k < 90; k++) {
-                    pstmt->setInt(1, generateNumber(7));
-                    pstmt->setString(2, dates[i]);
-                    pstmt->execute();
+                    pstmt->setInt(1, train_no);
+                    pstmt->setString(2, dates[k]);
+                    pstmt->executeUpdate();
+                    train_no++;
                 }
             }
         }
@@ -242,7 +258,7 @@ void Backend::getSelectedTrains(int start, int end, string date) {
     tickets.clear();
     string dep_city = stations[start - 1];
     string end_city = stations[end - 1];
-    pstmt = con->prepareStatement("SELECT * FROM schedule WHERE (departure_station = '?' AND arrival_station = '?' AND date = '?');");
+    pstmt = con->prepareStatement("SELECT * FROM schedule WHERE (departure_station = ? AND arrival_station = ? AND date = ?);");
     pstmt->setString(1, dep_city);
     pstmt->setString(2, end_city);
     pstmt->setString(3, date);
@@ -669,6 +685,7 @@ int Menu::start() {
 }
 
 int main(){
+    srand(time(NULL));
     Menu m;
     Backend b;
     Login l(&b);
