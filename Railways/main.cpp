@@ -21,6 +21,7 @@ private:
     sql::PreparedStatement* pstmt;
     sql::ResultSet* res;
     vector<string> stations = { "Chennai", "Madurai", "Trichy", "Coimbatore", "Bangalore", "Mettupalayam", "Mumbai", "Delhi", "Kolkata", "Hyderabad" };
+    string starting_date = "08/12/2022";
 	vector<int> train_no;
     vector<vector<string>> details;
 	vector<int> tickets;
@@ -35,7 +36,7 @@ public:
     Backend();
     ~Backend();
     void create();
-    void add(string d_station, string e_station, string duration, int tickets, int price);
+    void add(string d_station, string e_station, int tickets, int price);
     void remove(int train_no);
     bool usernameAlreadyExists(string username);
     void createUser(string username, string password);
@@ -178,7 +179,7 @@ Backend::Backend() {
     con->setSchema("giffy");
     stmt = con->createStatement();
     stmt->executeUpdate("CREATE TABLE IF NOT EXISTS schedule(train_no INTEGER(10) PRIMARY KEY, starting_date VARCHAR(12), departure_station VARCHAR(50), departure_time VARCHAR(12), arrival_station VARCHAR(40), arrival_time VARCHAR(12), duration VARCHAR(8), tickets INTEGER(3), price INTEGER(3));");
-    stmt->executeUpdate("CREATE TABLE IF NOT EXISTS userinfo(username VARCHAR(50) PRIMARY KEY, password VARCHAR(50));");
+    stmt->executeUpdate("CREATE TABLE IF NOT EXISTS userinfo(username VARCHAR(50), password VARCHAR(50));");
     stmt->executeUpdate("CREATE TABLE IF NOT EXISTS booked_tickets(username VARCHAR(50) PRIMARY KEY, journey_date VARCHAR(50), train_no INTEGER(7), no_of_tickets INTEGER(3));");
     //create();
 }
@@ -192,7 +193,6 @@ Backend:: ~Backend(){
 void Backend::create() {
     int count = stations.size();
     pstmt = con->prepareStatement("INSERT INTO schedule VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
-    string starting_date = "08/12/2022";
     vector<string> dates;
     string departure_time = "a";
     string arrival_time = "e";
@@ -226,30 +226,32 @@ void Backend::create() {
     }
 }
 
-void Backend::add(string d_station, string e_station, string duration, int tickets, int price) {
+void Backend::add(string d_station, string e_station, int tickets, int price) {
     pstmt = con->prepareStatement("INSERT INTO schedule(train_no, starting_date, departure_station, departure_time, arrival_station, arrival_time, duration, tickets, price) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
-    int train_no = 1;
-    string starting_date = "0";
-    string departure_time = "2";
-    string arrival_time = "2";
+    int train_no = generateNumber(8);
+    string departure_time = generateTime();;
+    string arrival_time = generateTime();
     pstmt->setInt(1, train_no);
 	pstmt->setString(3, d_station);
 	pstmt->setString(4, departure_time);
 	pstmt->setString(5, e_station);
 	pstmt->setString(6, arrival_time);
-	pstmt->setString(7, duration);
+	pstmt->setString(7, findTime(departure_time, arrival_time));
 	pstmt->setInt(8, tickets);
 	pstmt->setInt(9, price);
 	for (int k = 0; k < 90; k++) {
 		pstmt->setString(2, starting_date);
 		pstmt->execute();
+        starting_date = generateDate(starting_date, 1);
 	}
+    cout << "Train added successfully!\n";
 }
 
 void Backend::remove(int train_no) {
     pstmt = con->prepareStatement("DELETE * FROM schedule WHERE train_no = ?;");
     pstmt->setInt(1, train_no);
     pstmt->execute();
+    cout << "The train has been removed successfully\n";
 }
     
 void Backend::getSelectedTrains(int start, int end, string date) {
@@ -286,11 +288,14 @@ int Backend::printSelectedTrains() {
         return -1;
     }
     int i = 0;
-    printf("%10s %10s %10s %10s %10s %10s %10s %5s %5s\n", "Date of Journey Start", "Departure Station", "Departure Time", "Arrival Station", "Arrival Time", "Duration", "Tickets", "Price");
+    printf("%5s %10s %10s %10s %10s %10s %10s %10s %5s %5s\n", "S.No", "Train number ","Date of Journey Start", "Departure Station", "Departure Time", "Arrival Station", "Arrival Time", "Duration", "Tickets", "Price");
     for (; i < details.size(); i++) {
-        printf("%d ", (i + 1));
+        printf("%5d ", (i + 1));
+        cout.width(10);
+        cout << train_no[i];
         for (int j = 0; j < details[i].size(); j++) {
-            printf("%10s ", details[i][j]);
+            cout.width(10);
+            cout << details[i][j];
         }
         printf("%5d %5d\n", tickets[i], price[i]);
     }
@@ -310,7 +315,7 @@ void Backend::updateUser(string username, string date, int train_no, int tickets
     pstmt->setString(2, date);
     pstmt->setInt(3, train_no);
     pstmt->setInt(4, tickets);
-    pstmt->execute();
+    pstmt->executeUpdate();
 }
 
 int Backend::getBookedTickets(string username) {
@@ -338,7 +343,8 @@ void Backend::printBookedTickets() {
         res = pstmt->executeQuery();
         d_station = res->getString("departure_statiion");
         e_station = res->getString("arrival_statiion");
-        printf("%10s %10s %10d %10d\n", d_station, e_station, booked_train_no[i], booked_tickets[i]);
+        cout.width(10);
+        cout << d_station << " " << e_station << " " << booked_train_no[i] << " " << booked_tickets[i] << "\n";
         i++;
     }
 
@@ -384,7 +390,7 @@ int Login::userLogin(int choice) {
         cin >> username;
         cout << "Enter the password\n";
         cin >> password;
-        bool valid = database->checkUser(username, password);//do SQL here
+        bool valid = database->checkUser(username, password);
         if (valid) {
             return 1;
         }
@@ -488,14 +494,14 @@ void User::book() {
         return;
     }
     int train_choice;
-    cout << "Enter the train\n";
+    cout << "Enter the train of your choice\n";
     cin >> train_choice;
     if (train_choice < 1 || train_choice > val) {
         cout << "Enter a valid choice\n";
         return;
     }
     int tickets;
-    cout << "Enter the no of tickets you want\n";
+    cout << "Enter the number of tickets you want\n";
     cin >> tickets;
     database->book(train_choice, tickets);
     //username VARCHAR(50) PRIMARY KEY, journey_date VARCHAR(50), train_no INTEGER(7), no_of_tickets INTEGER(3)
@@ -566,7 +572,6 @@ private:
     void populate();
     void addTrain();
     void deleteTrain();
-    void updateTrain();
 public:
     Admin(Backend* b);
     int start();
@@ -584,20 +589,17 @@ void Admin::populate(){
 void Admin::addTrain() {
     string start_station;
     string end_station;
-    string duration;
     int tickets;
     int price;
     cout << "Enter the starting station\n";
     cin >> start_station;
     cout << "Enter the ending station\n";
     cin >> end_station;
-    cout << "Enter the duration\n";
-    cin >> duration;
     cout << "Enter the number of available tickets\n";
     cin >> tickets;
     cout << "Enter the price of a ticket\n";
     cin >> price;
-    database->add(start_station, end_station, duration, tickets, price);
+    database->add(start_station, end_station, tickets, price);
 }
 
 void Admin::deleteTrain() {
@@ -605,13 +607,6 @@ void Admin::deleteTrain() {
     cout << "Enter the train number of the train to be deleted\n";
     cin >> train_no;
     database->remove(train_no);
-}
-
-void Admin::updateTrain() {
-    int train_no;
-    cout << "Enter the train number for which details need to be updated\n";
-    cin >> train_no;
-
 }
 
 int Admin::start() {
@@ -626,8 +621,7 @@ int Admin::menu() {
         cout << "Enter 1 to populate the database\n";
         cout << "Enter 2 to add a train route\n";
         cout << "Enter 3 to delete a train route\n";
-        cout << "Enter 4 to update a train route\n";
-        cout << "Enter 5 to exit\n";
+        cout << "Enter 4 to exit\n";
         cin >> choice;
         if (choice == 1) {
             populate();
@@ -639,9 +633,6 @@ int Admin::menu() {
             deleteTrain();
         }
         else if (choice == 4) {
-            updateTrain();
-        }
-        else if (choice == 5) {
             return -1;
         }
         else {
@@ -764,5 +755,6 @@ int main(){
             return 0;
         }
     }
+    cout << "Thank you for using this application!\n";
     return 0;
 }
