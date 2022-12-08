@@ -9,12 +9,12 @@
 #include <cppconn/prepared_statement.h>
 using namespace std;
 
-const string server = "tcp://127.0.0.1:3306";
-const string username = "root";
-const string password = "root";
 
 class Backend {
 private:
+    const string server = "tcp://127.0.0.1:3306";
+    const string username = "root";
+    const string password = "root";
     sql::Driver* driver;
     sql::Connection* con;
     sql::Statement* stmt;
