@@ -7,14 +7,16 @@ Team Members:
 ## Problem Statement
 Creating an application which is a mock version of an actual railways ticket reservation system and allows the system administrator to add and delete trains.
 ## UML
-
+![UML1](https://user-images.githubusercontent.com/55153800/206425137-e87f954b-f4e0-430b-bdf4-de5985e4273d.JPG)
+![UML2](https://user-images.githubusercontent.com/55153800/206425140-90a57f63-7418-4060-a2c4-285f6d9f034e.JPG)
+![UML3](https://user-images.githubusercontent.com/55153800/206425129-5561af91-93aa-4f20-8894-a46ae796cd32.JPG)
+![UML4](https://user-images.githubusercontent.com/55153800/206425136-fdbddca3-2dff-4831-8e10-9f2104d9399a.JPG)
 ## Assumptions / Constraints
 1. The database only contains trains upto 90 days from the date on which the databases are populated.
 2. The program is only able to handle a fixed number of cities. Changing the cities requires recompilation.
 3. The duration of each journey is randomized. It may not make sense when the real world distances are taken into account.
 4. The trains are from point to point. The intermediate stations are not considered.
-5. The prices of the t!
-rain tickets are also randomized. They may not reflect the reality of the prices.
+5. The prices of the train tickets are also randomized. They may not reflect the reality of the prices.
 ## Methodology
 1. The application uses the MySQL Connector C++ API to query the databases run using a MySQL server.
 2. The databases are created and populated methodically in the app itself, and do not require manual insertion of data.
