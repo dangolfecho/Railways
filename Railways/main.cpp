@@ -176,7 +176,7 @@ Backend::Backend() {
         system("pause");
         exit(1);
     }
-    con->setSchema("giffy");
+    con->setSchema("railways");
     stmt = con->createStatement();
     stmt->executeUpdate("CREATE TABLE IF NOT EXISTS schedule(train_no INTEGER(10) PRIMARY KEY, starting_date VARCHAR(12), departure_station VARCHAR(50), departure_time VARCHAR(12), arrival_station VARCHAR(40), arrival_time VARCHAR(12), duration VARCHAR(8), tickets INTEGER(3), price INTEGER(3));");
     stmt->executeUpdate("CREATE TABLE IF NOT EXISTS userinfo(username VARCHAR(50) PRIMARY KEY, password VARCHAR(50));");
