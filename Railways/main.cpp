@@ -228,10 +228,16 @@ void Backend::create() {
 
 void Backend::add(string d_station, string e_station, int tickets, int price) {
     pstmt = con->prepareStatement("INSERT INTO schedule(train_no, starting_date, departure_station, departure_time, arrival_station, arrival_time, duration, tickets, price) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
-    int train_no = generateNumber(8);
+    int train_num = generateNumber(8);
+    if (find(stations.begin(), stations.end(), d_station) == stations.end()) {
+        stations.push_back(d_station);
+    }
+    if (find(stations.begin(), stations.end(), e_station) == stations.end()) {
+        stations.push_back(e_station);
+    }
     string departure_time = generateTime();;
     string arrival_time = generateTime();
-    pstmt->setInt(1, train_no);
+    pstmt->setInt(1, train_num);
 	pstmt->setString(3, d_station);
 	pstmt->setString(4, departure_time);
 	pstmt->setString(5, e_station);
@@ -239,16 +245,19 @@ void Backend::add(string d_station, string e_station, int tickets, int price) {
 	pstmt->setString(7, findTime(departure_time, arrival_time));
 	pstmt->setInt(8, tickets);
 	pstmt->setInt(9, price);
+    string save = starting_date;
 	for (int k = 0; k < 90; k++) {
 		pstmt->setString(2, starting_date);
 		pstmt->execute();
         starting_date = generateDate(starting_date, 1);
+        train_num = generateNumber(8);
 	}
+    starting_date = save;
     cout << "Train added successfully!\n";
 }
 
 void Backend::remove(int train_no) {
-    pstmt = con->prepareStatement("DELETE * FROM schedule WHERE train_no = ?;");
+    pstmt = con->prepareStatement("DELETE FROM schedule WHERE train_no = ?;");
     pstmt->setInt(1, train_no);
     pstmt->execute();
     cout << "The train has been removed successfully\n";
