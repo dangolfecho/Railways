@@ -237,7 +237,6 @@ void Backend::add(string d_station, string e_station, int tickets, int price) {
     }
     string departure_time = generateTime();;
     string arrival_time = generateTime();
-    pstmt->setInt(1, train_num);
 	pstmt->setString(3, d_station);
 	pstmt->setString(4, departure_time);
 	pstmt->setString(5, e_station);
@@ -247,6 +246,7 @@ void Backend::add(string d_station, string e_station, int tickets, int price) {
 	pstmt->setInt(9, price);
     string save = starting_date;
 	for (int k = 0; k < 90; k++) {
+        pstmt->setInt(1, train_num);
 		pstmt->setString(2, starting_date);
 		pstmt->execute();
         starting_date = generateDate(starting_date, 1);
