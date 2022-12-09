@@ -297,16 +297,16 @@ int Backend::printSelectedTrains() {
         return -1;
     }
     int i = 0;
-    printf("%5s %10s %10s %10s %10s %10s %10s %10s %5s %5s\n", "S.No", "Train number ","Date of Journey Start", "Departure Station", "Departure Time", "Arrival Station", "Arrival Time", "Duration", "Tickets", "Price");
+    printf("%20s %20s %20s %20s %20s %20s %20s %20s %20s %20s\n", "S.No", "Train number ","Date of Journey", "Departure Station", "Departure Time", "Arrival Station", "Arrival Time", "Duration", "Tickets", "Price");
     for (; i < details.size(); i++) {
-        printf("%5d ", (i + 1));
-        cout.width(10);
-        cout << train_no[i];
+        printf("%20d ", (i + 1));
+        cout.width(20);
+        cout << train_no[i] << " ";
         for (int j = 0; j < details[i].size(); j++) {
-            cout.width(10);
+            cout.width(20);
             cout << details[i][j];
         }
-        printf("%5d %5d\n", tickets[i], price[i]);
+        printf("%20d %20d\n", tickets[i], price[i]);
     }
     return i;
 }
@@ -347,15 +347,23 @@ void Backend::printBookedTickets() {
     string e_station;
     pstmt = con->prepareStatement("SELECT departure_station, arrival_station FROM schedule WHERE train_no = ?;");
     int i = 0;
-    printf("%10s %10s %10s %10s %10s\n","S.No",  "FROM", "TO", "TRAIN NO", "TICKETS");
+    printf("%20s %20s %20s %20s %20s\n","S.No",  "FROM", "TO", "TRAIN NO", "TICKETS");
     while (i < booked_tickets.size()) {
         pstmt->setInt(1, booked_train_no[i]);
         res = pstmt->executeQuery();
         while (res->next()) {
             d_station = res->getString("departure_station");
             e_station = res->getString("arrival_station");
-            cout.width(10);
-            cout << (i+1) << d_station << " " << e_station << " " << booked_train_no[i] << " " << booked_tickets[i] << "\n";
+            cout.width(20);
+            cout << (i + 1) << " ";
+            cout.width(20);
+            cout << d_station << " ";
+            cout.width(20);
+            cout << e_station << " ";
+            cout.width(20);
+            cout << booked_train_no[i] << " ";
+            cout.width(20);
+            cout << booked_tickets[i] << "\n";
             i++;
         }
     }
@@ -580,7 +588,6 @@ class Admin {
 private:
     Backend* database;
     int choice;
-    void decide();
     void populate();
     void addTrain();
     void deleteTrain();
