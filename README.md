@@ -26,8 +26,9 @@ Creating an application which is a mock version of an actual railways ticket res
 2. MySQL Connector API C++
 3. MinGW - For recompiling the program if required.
 ## Sample IO
-![](https://user-images.githubusercontent.com/55153800/206419078-cbaf17de-a779-43a4-a98a-553847a5b81f.JPG)
-![](https://user-images.githubusercontent.com/55153800/206419141-9a376f61-366a-4647-bea4-6f9756c95dce.JPG)
+![upload1](https://user-images.githubusercontent.com/55153800/206648280-b1015ff6-dec2-4930-8860-7cc7cbee160b.JPG)
+![upload2](https://user-images.githubusercontent.com/55153800/206648298-8d179513-7eda-4fff-8184-d4bf143c3683.JPG)
+![upload3](https://user-images.githubusercontent.com/55153800/206648307-08cce0f1-adef-42b1-b179-d19d8d977ccf.JPG)
 ## Sample Databases
 ### Table: booked_tickets
 Stores the data of the booked tickets
